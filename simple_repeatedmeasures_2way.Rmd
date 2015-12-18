@@ -1,0 +1,73 @@
+---
+title: "simple_repeatedmeasures_2way"
+author: "Thackery Brown"
+date: "12/18/2015"
+#output: pdf_document
+---
+
+Load relevant libraries (e.g. gdata package to enable xls reading)
+```{r}
+library(gdata)
+library(nlme)
+library(reshape2)
+library(lme4)
+library(lmerTest)
+```
+
+Import excel file of interest (there are assumptions about formatting here...)
+```{r}
+testdata = read.xls("testfile2.xls")
+head(testdata)
+summary(testdata)
+```
+
+Tell R specifically to make the sub id column a "factor", because it will likely import them as integers otherwise
+```{r factor_subject}
+testdata$sub = factor(testdata$sub)
+str(testdata)
+```
+
+Get expected paired difference significance using paired t-test
+
+### T-Test
+```{r}
+t.test(testdata$score1, testdata$score2, paired=TRUE)
+```
+
+Now let's reformat the data into "long" format for repeated-measures analysis
+```{r}
+#myrepeatedmeasures<-make.rm(constant=c('sub'),repeated=c('score1','score2'),data=testdata)
+myrepeatedmeasures <- melt(testdata) #melt(testdata, id=c("sub")) 
+```
+
+View data (repdat = variable of analysis, contrasts = repetition labels, cons.col = subjects)
+```{r}
+head(myrepeatedmeasures)
+tail(myrepeatedmeasures)
+str(myrepeatedmeasures)
+```
+
+And crunch the univariate repeated-measures ANOVA
+
+### AOV
+```{r}
+rs_aov = aov(value~(variable*network)+Error(sub/(variable*network)),myrepeatedmeasures)
+summary(rs_aov)
+```
+### paired T-test for specific factor
+Now that we reshaped the data, the t-test code format changes
+First, filter data to factor level of interest
+
+```{r}
+DANonly <- subset(myrepeatedmeasures, network=="DAN")
+```
+
+Then conduct t-test
+
+```{r}
+t.test(value ~ variable, DANonly, paired=TRUE)
+```
+
+
+### Equivalent from Linear Mixed Effects package
+...coming soon
