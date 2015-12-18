@@ -1,0 +1,83 @@
+---
+title: "simple_repeatedmeasures"
+author: "Thackery Brown"
+date: "11/06/2014"
+#output: pdf_document
+---
+
+Load relevant libraries (e.g. gdata package to enable xls reading)
+```{r}
+library(gdata)
+library(nlme)
+library(reshape2)
+library(lme4)
+library(lmerTest)
+```
+
+Import excel file of interest (there are assumptions about formatting here...)
+```{r}
+testdata = read.xls("testfile.xls")
+head(testdata)
+summary(testdata)
+```
+
+Tell R specifically to make the sub id column a "factor", because it might import them as integers otherwise
+```{r factor_subject}
+testdata$sub = factor(testdata$sub)
+str(testdata)
+```
+
+Get expected paired difference significance using paired t-test
+### T-Test
+```{r}
+t.test(testdata$score1, testdata$score2, paired=TRUE)
+```
+
+Now let's reformat the data into "long" format for repeated-measures analysis
+```{r}
+#myrepeatedmeasures<-make.rm(constant=c('sub'),repeated=c('score1','score2'),data=testdata)
+myrepeatedmeasures <- melt(testdata, id=c("sub")) 
+```
+
+View data (repdat = variable of analysis, contrasts = repetition labels, cons.col = subjects)
+```{r}
+head(myrepeatedmeasures)
+tail(myrepeatedmeasures)
+str(myrepeatedmeasures)
+```
+
+And crunch the univariate repeated-measures ANOVA
+
+### AOV
+```{r}
+rs_aov = aov(value~variable+Error(sub/variable),myrepeatedmeasures)
+summary(rs_aov)
+```
+
+### Equivalent from Linear Mixed Effects package
+```{r}
+contrasts(myrepeatedmeasures$variable)
+rs_lme = lme(value ~ variable, data = myrepeatedmeasures, random = ~ 1 | sub) 
+summary(rs_lme)
+
+# Now, use contrast coding
+contrasts(myrepeatedmeasures$variable) = c(-1,1)
+contrasts(myrepeatedmeasures$variable)
+rs_lme_effect = lme(value ~ variable, data = myrepeatedmeasures, random = ~ 1 | sub) 
+summary(rs_lme_effect)
+anova(rs_lme_effect)
+```
+
+### LMER
+```{r}
+rs_lmer = lmer(value ~ variable + (1|sub), data = myrepeatedmeasures)
+summary(rs_lmer)
+anova(rs_lmer)
+```
+
+### Comparison across functions
+```{r}
+summary(rs_aov)
+anova(rs_lme_effect)
+anova(rs_lmer)
+```
