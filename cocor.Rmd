@@ -1,0 +1,58 @@
+---
+title: "cocor, Post"
+output: html_document
+---
+
+cocor - comparing correlations, 1.1-2, http://comparingcorrelations.org
+
+raghunathan1996 is a common optimization of Pearson-Filon Z statistic for comparing dependent but non-overlapping correlations
+
+NOTE: must manually set number of observations in cocor code below at this time
+
+Load relevant libraries (e.g. gdata package to enable xls reading)
+```{r}
+library(gdata)
+library(nlme)
+library(reshape2)
+library(lme4)
+library(lmerTest)
+```
+
+load package
+```{r}
+require(cocor) 
+```
+
+set working directory to where data are
+```{r}
+setwd("C:/Users/Thackery/Dropbox/Work transfer/ORE/R_analysis")
+
+```
+
+Import excel file of interest (there are assumptions about formatting here...)
+```{r}
+testdata = read.xls("testfile4.xls")
+head(testdata)
+summary(testdata)
+```
+
+Tell R specifically to make the sub id column a "factor", because it will likely import them as integers otherwise
+```{r factor_subject}
+testdata$sub = factor(testdata$sub)
+str(testdata)
+
+```
+
+Create correlation matrix of numeric (non factor or character) entries in data. Skip missing entries (NA)
+```{r}
+COR <- cor(testdata[sapply(testdata, is.numeric)], use="pairwise.complete.obs")
+COR
+```
+
+```{r}
+cocor.dep.groups.nonoverlap(r.jk=COR["In_grp","inda"], r.hm=COR["Out_grp","outda"], r.jh=COR["In_grp","Out_grp"], r.jm=COR["In_grp","outda"], r.kh=COR["Out_grp","inda"], r.km=COR["inda","outda"], n=22, alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0)
+```
+
+
+
+
