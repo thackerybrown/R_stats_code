@@ -1,0 +1,52 @@
+---
+title: "Corr, Post"
+author: "Thackery Brown"
+date: "12/18/2015"
+#output: pdf_document
+---
+
+Load relevant libraries (e.g. gdata package to enable xls reading)
+```{r}
+library(gdata)
+library(nlme)
+library(reshape2)
+library(lme4)
+library(lmerTest)
+library(Hmisc)
+```
+
+set working directory to where data are
+```{r}
+setwd("C:/Users/Thackery/Dropbox/Work transfer/ORE/R_analysis")
+
+```
+
+
+Import excel file of interest (there are assumptions about formatting here...)
+```{r}
+testdata = read.xls("testfile3.xls")
+head(testdata)
+summary(testdata)
+```
+
+Tell R specifically to make the sub id column a "factor", because it will likely import them as integers otherwise
+```{r factor_subject}
+testdata$sub = factor(testdata$sub)
+str(testdata)
+
+```
+
+Create correlation matrix of numeric (non factor or character) entries in data. Skip missing entries (NA)
+```{r}
+COR <- cor(testdata[sapply(testdata, is.numeric)], use="pairwise.complete.obs")
+COR
+```
+
+
+re-run using rcorr to get p values
+```{r}
+x <- testdata[sapply(testdata, is.numeric)]
+rcorr(as.matrix(x))
+```
+
+
