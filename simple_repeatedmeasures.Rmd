@@ -12,6 +12,7 @@ library(nlme)
 library(reshape2)
 library(lme4)
 library(lmerTest)
+setwd("C:/Users/Thackery/Documents/work/R_stats_code")
 ```
 
 Import excel file of interest (there are assumptions about formatting here...)

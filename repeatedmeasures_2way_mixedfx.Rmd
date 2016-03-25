@@ -1,0 +1,107 @@
+---
+title: "Mixedfx of d' by race"
+author: "Thackery Brown"
+date: "3/24/2016"
+#output: pdf_document
+---
+
+Load relevant libraries (e.g. gdata package to enable xls reading)
+```{r}
+library(gdata)
+library(nlme)
+library(reshape2)
+library(lme4)
+library(lmerTest)
+library(car) # for changing the type of ANOVA table
+```
+
+set working directory to where data are
+```{r}
+setwd("C:/Users/Thackery/Dropbox/Work transfer/ORE/R_analysis")
+
+```
+
+
+Import excel file of interest (there are assumptions about formatting here...)
+```{r}
+testdata = read.xls("testfileEAvsAA.xls")
+head(testdata)
+summary(testdata)
+```
+
+Tell R specifically to make the sub id column a "factor", because it will likely import them as integers otherwise
+```{r factor_subject}
+testdata$sub = factor(testdata$sub)
+str(testdata)
+```
+Now let's reformat the data into "long" format for repeated-measures analysis
+```{r}
+#myrepeatedmeasures<-make.rm(constant=c('sub'),repeated=c('score1','score2'),data=testdata)
+myrepeatedmeasures <- melt(testdata) #melt(testdata, id=c("sub")) 
+```
+
+View data (repdat = variable of analysis, contrasts = repetition labels, cons.col = subjects)
+```{r}
+head(myrepeatedmeasures)
+tail(myrepeatedmeasures)
+str(myrepeatedmeasures)
+```
+set up contrasts
+
+```{r}
+contrasts(myrepeatedmeasures$race) = c(-1,1); contrasts(myrepeatedmeasures$race)
+
+contrasts(myrepeatedmeasures$variable) = c(1,-1); contrasts(myrepeatedmeasures$variable)
+
+```
+
+And crunch the mixed-effects model
+
+### mixed effects, most complex
+```{r}
+rs1 = lmer(value ~ race * variable + (1|sub), data=myrepeatedmeasures)
+summary(rs1)
+
+```
+
+### anova from most complex using type 3 
+```{r}
+anova(rs1)
+
+```
+
+### anova from most complex using type 2
+
+```{r}
+Anova(rs1, type='II')
+
+```
+
+### simplified model 
+
+
+```{r}
+rs2 = lmer(value ~ race + variable + (1|sub), data=myrepeatedmeasures)
+anova(rs1, rs2) # rs1 isn't any better
+summary(rs2)
+```
+
+### simplified further by removing race as a factor
+
+```{r}
+rs3 = lmer(value ~ variable + (1|sub), data=myrepeatedmeasures)
+anova(rs2, rs3) # rs2 isn't any better than this simple model
+summary(rs3)
+```
+
+
+### lastly, AOV version
+This should match results w/ANOVA w/type II ANOVA table:
+```{r}
+fit <- aov(value~(variable*race)+Error(sub/(variable))+(race), data=myrepeatedmeasures)
+summary(fit)
+
+```
+
+
+
