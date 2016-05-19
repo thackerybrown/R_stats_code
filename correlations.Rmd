@@ -1,5 +1,5 @@
 ---
-title: "Corr, Post"
+title: "Corr, Par"
 author: "Thackery Brown"
 date: "12/18/2015"
 #output: pdf_document
@@ -24,7 +24,7 @@ setwd("C:/Users/Thackery/Dropbox/Work transfer/ORE/R_analysis")
 
 Import excel file of interest (there are assumptions about formatting here...)
 ```{r}
-testdata = read.xls("testfile3.xls")
+testdata = read.xls("testfile4.xls")
 head(testdata)
 summary(testdata)
 ```

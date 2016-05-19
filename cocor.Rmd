@@ -16,6 +16,7 @@ library(nlme)
 library(reshape2)
 library(lme4)
 library(lmerTest)
+library(Hmisc)
 ```
 
 load package
@@ -49,9 +50,23 @@ COR <- cor(testdata[sapply(testdata, is.numeric)], use="pairwise.complete.obs")
 COR
 ```
 
+re-run using rcorr to get p values
 ```{r}
-cocor.dep.groups.nonoverlap(r.jk=COR["In_grp","inda"], r.hm=COR["Out_grp","outda"], r.jh=COR["In_grp","Out_grp"], r.jm=COR["In_grp","outda"], r.kh=COR["Out_grp","inda"], r.km=COR["inda","outda"], n=22, alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0)
+x <- testdata[sapply(testdata, is.numeric)]
+rcorr(as.matrix(x))
 ```
+
+
+```{r}
+cocor.dep.groups.nonoverlap(r.jk=COR["In_grp","inda"], r.hm=COR["Out_grp","outda"], r.jh=COR["In_grp","Out_grp"], r.jm=COR["In_grp","outda"], r.kh=COR["Out_grp","inda"], r.km=COR["inda","outda"], n=19, alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0)
+```
+
+Re-run assuming overlapping instead of non-overlapping (i.e., shared predictor)
+
+```{r}
+cocor.dep.groups.overlap(r.jk=COR["In_grp","inda"], r.jh=COR["Out_grp","inda"], r.kh=COR["In_grp","Out_grp"], n=19, alternative="two.sided", alpha=0.05, conf.level=0.95, null.value=0)
+```
+
 
 
 
