@@ -1,0 +1,149 @@
+---
+title: "Necos, Bilateral, two hippoROIs*3 conds"
+author: "Thackery Brown"
+date: "06/28/2016"
+#output: pdf_document
+---
+
+Load relevant libraries (e.g. gdata package to enable xls reading)
+```{r}
+library(gdata)
+library(nlme)
+library(reshape2)
+library(lme4)
+library(lmerTest)
+```
+
+set working directory to where data are
+```{r}
+setwd("C:/Users/Thackery/Documents/work/necos/R_analysis")
+
+```
+
+
+Import excel file of interest (there are assumptions about formatting here...)
+```{r}
+testdata = read.xls("testfile1b.xls")
+head(testdata)
+summary(testdata)
+```
+
+Tell R specifically to make the sub id column a "factor", because it will likely import them as integers otherwise
+```{r factor_subject}
+testdata$sub = factor(testdata$sub)
+str(testdata)
+```
+
+Get expected paired difference significance using paired t-test
+
+### T-Test
+```{r}
+t.test(testdata$Tail, testdata$Body, paired=TRUE)
+```
+
+Now let's reformat the data into "long" format for repeated-measures analysis
+```{r}
+#myrepeatedmeasures<-make.rm(constant=c('sub'),repeated=c('score1','score2'),data=testdata)
+myrepeatedmeasures <- melt(testdata) #melt(testdata, id=c("sub")) 
+
+```
+View data (repdat = variable of analysis, contrasts = repetition labels, cons.col = subjects)
+```{r}
+head(myrepeatedmeasures)
+tail(myrepeatedmeasures)
+str(myrepeatedmeasures)
+```
+
+Mixed effect model approach to repeated-measures analysis:
+```{r}
+str(myrepeatedmeasures)
+contrasts(myrepeatedmeasures$variable) = c(1,-1); contrasts(myrepeatedmeasures$variable)
+contrasts(myrepeatedmeasures$cond) = cbind(stratVSother = c(-.5,-.5,1),
+                                           revVSstay = c(1,-1,0)); contrasts(myrepeatedmeasures$cond)
+contrasts(myrepeatedmeasures$hemisphere) = c(1,-1); contrasts(myrepeatedmeasures$hemisphere)
+
+# even more complex model
+res3 = lmer(value ~ (variable * cond) * hemisphere + (1|sub), data=myrepeatedmeasures)
+summary(res3)
+anova(res3)
+
+# even more complex model
+res4 = lmer(value ~ (variable * cond) * hemisphere + (1 + variable|sub), data=myrepeatedmeasures)
+summary(res4)
+anova(res4)
+
+# even more complex model
+res5 = lmer(value ~ (variable * cond) * hemisphere + (1 + variable + cond|sub), data=myrepeatedmeasures)
+summary(res5)
+anova(res5)
+
+# more complex model
+#res6 = lmer(value ~ variable * cond + variable * hemisphere + variable*cond*hemisphere + (1 + variable + cond + hemisphere|sub), data=myrepeatedmeasures)
+res6 = lmer(value ~ (variable * cond) * hemisphere + (1 + variable + cond + hemisphere|sub), data=myrepeatedmeasures)
+summary(res6)
+anova(res6)
+
+# most complex model
+res7 = lmer(value ~ (variable * cond) * hemisphere + (1 + variable + cond + hemisphere + variable:cond|sub), data=myrepeatedmeasures)
+summary(res7)
+anova(res7)
+
+# determine which model is best (take simplest when there is no sig Chi Sq)
+anova(res3, res4, res5, res6, res7, refit=FALSE)
+#coef(res6)
+
+# most complex model effects just in tail
+# contrasts(myrepeatedmeasures$variable) = c(0,1); contrasts(myrepeatedmeasures$variable)
+# res6 = lmer(value ~ variable * cond + variable * hemisphere + variable*cond*hemisphere + (1 + variable + cond + hemisphere|sub), data=myrepeatedmeasures)
+# summary(res6)
+# anova(res6)
+
+
+# most complex model effects just in body
+# contrasts(myrepeatedmeasures$variable) = c(1,0); contrasts(myrepeatedmeasures$variable)
+# res6 = lmer(value ~ variable * cond + variable * hemisphere + variable*cond*hemisphere + (1 + variable + cond + hemisphere|sub), data=myrepeatedmeasures)
+# summary(res6)
+# anova(res6)
+
+```
+
+And crunch the univariate repeated-measures ANOVA
+
+### AOV
+```{r}
+# rs_aov = aov(value~(variable*cond)+Error(sub/(variable*cond)),myrepeatedmeasures)
+# summary(rs_aov)
+#drop1(rs_aov,~.,test="F")
+```
+### paired T-test for specific factor
+Now that we reshaped the data, the t-test code format changes
+First, filter data to factor level of interest
+
+```{r}
+Stayonly <- subset(myrepeatedmeasures, cond=="Stay")
+Revonly <- subset(myrepeatedmeasures, cond=="Rev")
+
+# Tailonly <- myrepeatedmeasures[myrepeatedmeasures$variable == 'Tail',] #subset myrepeatedmeasures with indexing
+# Tailonly_revstay <- Tailonly[Tailonly$cond %in% c('Stay', 'Rev'),] #subset Tailonly with indexing using a string of indices
+# Tailonly_stratvrev <- Tailonly[Tailonly$cond %in% c('Strat', 'Rev'),] #subset Tailonly with indexing using a string of indices
+# Tailonly_stratvstay <- Tailonly[Tailonly$cond %in% c('Strat', 'Stay'),] #subset Tailonly with indexing using a string of indices
+# 
+# Bodyonly <- myrepeatedmeasures[myrepeatedmeasures$variable == 'Body',] #subset myrepeatedmeasures with indexing
+# Bodyonly_revstay <- Bodyonly[Bodyonly$cond %in% c('Stay', 'Rev'),] #subset Tailonly with indexing using a string of indices
+# Bodyonly_stratvrev <- Bodyonly[Bodyonly$cond %in% c('Strat', 'Rev'),] #subset Tailonly with indexing using a string of indices
+# Bodyonly_stratvstay <- Bodyonly[Bodyonly$cond %in% c('Strat', 'Stay'),] #subset Tailonly with indexing using a string of indices
+```
+
+Then conduct t-tests
+
+```{r}
+# t.test(value ~ cond, Tailonly_revstay, paired=TRUE)
+# t.test(value ~ cond, Tailonly_stratvrev, paired=TRUE)
+# t.test(value ~ cond, Tailonly_stratvstay, paired=TRUE)
+# 
+# t.test(value ~ cond, Bodyonly_revstay, paired=TRUE)
+# t.test(value ~ cond, Bodyonly_stratvrev, paired=TRUE)
+# t.test(value ~ cond, Bodyonly_stratvstay, paired=TRUE)
+
+```
+
